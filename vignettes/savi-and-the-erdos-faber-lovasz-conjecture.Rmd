@@ -4,7 +4,7 @@ author: "Nick Simone"
 date: "Last Modified: `r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Savi and the Erdős–Faber–Lovász Conjecture}
+  %\VignetteIndexEntry{Savi and the Erdos–Faber–Lovasz Conjecture}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
