@@ -1,0 +1,180 @@
+---
+title: "Savi and the Erdős–Faber–Lovász Conjecture"
+author: "Nick Simone"
+date: "Last Modified: `r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Savi and the Erdős–Faber–Lovász Conjecture}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+----------------
+Abstract:
+  This vignette uses the Erdős–Faber–Lovász (EFL) conjecture to test the performance of the greedy algorithm and simulated annealing on different cooling schedules.  It also shows how savi can create an igraph for a given $k$ that conforms to the EFL conjecture's given conditions.  We call such a graph an EFL-$k$ graph.
+  Please note that throughout this vignette we have set the seed in each code block that contains random elements.  This allows to you run each code block seperately and get the same results as we have below and in the associated thesis. 
+----------------
+
+## 1) Defining the Problem
+  The EFL conjecture states the following: 
+
+  Let $G$ be a graph made of $k$ $k$-complete graphs where each pair of $k$-complete graphs share at most one vertex.  Then G may be colored with $k$ colors.  
+   
+  This problem is similar to the $k$-partite problem and has the same scoring function.  This is because a $k$-partite graph can be colored with $k$ colors.  Thus, if an EFL-$k$ graph is $k$-partite, then it adheres to the EFL conjecture.  The main contribution of savi is the ability to create and check graphs for compliance with the EFL conjecture.  Thus, it is most useful for finding a counterexample.
+
+## 2) The Scoring Function
+The following function returns the number of edges between vertices in the same group.  Thus, if the score is zero, then we have found a state where the graph is $k$-partite.  Since such a state exists, we have shown that the graph itself is $k$-partite.  Thus, the graph can be colored with $k$ colors and adheres to the EFL conjecture.
+
+```{r, message=FALSE, cache=TRUE}
+library(savi)
+
+myScoringFunction<-function(g){
+  #Get the number of Groups
+  numOfGroups<-max(V(g)$group)
+
+  #Count the number of inter-group edges
+  s<-0
+  for(i in c(1:numOfGroups)){
+    s<-s+length(which(tail_of(g,E(g))$group==i & head_of(g,E(g))$group==i))
+  }
+
+  return(s)
+}
+```
+
+## 3) Known Example
+We first test savi on a known example.  The graph below conforms to the EFL conjecture when $k=4$.  Note there are many different configurations for $k=4$ other than this example.  We use the built-in methods of igraph to create an EFL-4 graph and then put the vertices into 4 vertex groups randomly.  
+
+```{r, message=FALSE, cache=TRUE, fig.height = 4, fig.width = 6, fig.align='center'}
+adjm<-matrix(c(0,1,1,1,0,0,0,0,0,0,0,0,0,
+               1,0,1,1,0,0,0,0,0,0,0,0,0,
+               1,1,0,1,0,0,0,0,0,0,0,0,0,
+               1,1,1,0,1,1,1,0,0,0,0,0,0,
+               0,0,0,1,0,1,1,0,0,0,0,0,0,
+               0,0,0,1,1,0,1,0,0,0,0,0,0,
+               0,0,0,1,1,1,0,1,1,1,0,0,0,
+               0,0,0,0,0,0,1,0,1,1,0,0,0,
+               0,0,0,0,0,0,1,1,0,1,0,0,0,
+               0,0,0,0,0,0,1,1,1,0,1,1,1,
+               0,0,0,0,0,0,0,0,0,1,0,1,1,
+               0,0,0,0,0,0,0,0,0,1,1,0,1,
+               0,0,0,0,0,0,0,0,0,1,1,1,0),
+             nrow=13,
+             ncol=13,
+             byrow = TRUE)
+
+set.seed(142)
+g=graph_from_adjacency_matrix(adjm, mode=c("undirected"))
+g<-addRandomGroups(g,4)
+
+plotWithGroups(g,4)
+```
+
+We first run the greedy algorithm on the graph above.
+
+```{r, fig.height = 3, fig.width = 6, fig.align='center', cache=TRUE}
+set.seed(142)
+results_Greedy<-runSavi(g,4,"Greedy",500,myScoringFunction)
+plot(results_Greedy$scoreArr)
+```
+
+As you can see, the minimum score found is 0.  If you have trouble reading the graph, the minimum score can be found in the "resultList" variable returned by runSavi.  We can visualize the minimum state found by coloring the vertices according to what group they are in.  Note that none of the 4 colors are adjacent.  In other words, this is a 4-partite graph.  Thus, it can be colored with $k$ colors and adheres to the EFL conjecture.
+
+```{r, fig.height = 4, fig.width = 6, fig.align='center', cache=TRUE}
+plotWithGroups(results_Greedy$minGraph,4)
+```
+
+Next we run simulated annealing with the adaptive cooling schedule on the same graph.
+
+```{r, fig.height = 3, fig.width = 6, fig.align='center', cache=TRUE}
+set.seed(142)
+results_Adaptive<-runSavi(g,4,"Adaptive",c(500,10,20,0.8,0),myScoringFunction)
+plot(results_Adaptive$scoreArr)
+```
+
+The minimum score found is again 0.  The score moves around alot since we start at a high temperature.  At smaller temperatures, however, it begins to settle.  In cases where the score never seems to settle, we may wish to run the cooling schedule longer or start at a lower initial temperature. 
+
+Below is the coloring found by simulated annealing with the adaptive cooling schedule.
+
+```{r, fig.height = 4, fig.width = 6, fig.align='center', cache=TRUE}
+plotWithGroups(results_Adaptive$minGraph,4)
+```
+
+##4) Strict Greedy vs Greedy Example
+One interesting case comes up in EFL-3 graphs.  No EFL-3 graphs have strict local minium states, but they do have local minimum states.  This means that it is possible to enter a state where you can only move to states with a lower or equal score.  Below is the code to produce such a state.  For a more indepth discussion, see Section 7 of the associated thesis.
+
+```{r, message=FALSE, cache=TRUE, fig.height = 4, fig.width = 6, fig.align='center'}
+adjm<-matrix(c(0,1,1,0,0,0,0,
+               1,0,1,0,0,0,0,
+               1,1,0,1,1,0,0,
+               0,0,1,0,1,0,0,
+               0,0,1,1,0,1,1,
+               0,0,0,0,1,0,1,
+               0,0,0,0,1,1,0),
+             nrow=7,
+             ncol=7,
+             byrow = TRUE)
+g=graph_from_adjacency_matrix(adjm, mode=c("undirected"))
+V(g)$group=c(1,2,3,1,3,1,2)
+
+plotWithGroups(g,3)
+```
+
+We first run the strict greedy algorithm where the algorithm only moves to a state with a strictly lower score.  Note that this code produces Plot 7.9a in the associated thesis.
+
+```{r, fig.height = 3, fig.width = 6, fig.align='center', cache=TRUE}
+set.seed(142)
+results_Strict_Greedy<-runSavi(g,3,"Greedy",500,myScoringFunction,useStrict=TRUE)
+plot(results_Strict_Greedy$scoreArr)
+```
+
+As you can see by the above graph, the strict greedy algorithm falls into and stays at this local minimum state.  Now, we run the greedy algorithm where the algorithm will move to a state with the same score or lower.  Note that this code produces Plot 7.9b in the associated thesis.
+
+```{r, fig.height = 3, fig.width = 6, fig.align='center', cache=TRUE}
+set.seed(142)
+results_Greedy<-runSavi(g,3,"Greedy",500,myScoringFunction)
+plot(results_Greedy$scoreArr)
+```
+
+Here, the regular greedy algorithm finds the appropriate optimal score.  This is why the default for comparing the scores of states is not strict.  It should be noted that you can set the "useStrict"" variable to TRUE when running other cooling schedules.  However, the affects of doing so are negligible since the simulated annealing process has a nonzero probability of moving to a state with a higher score already.  
+
+##5) Large Example
+We now test the greedy algorithm and simulated annealing with three different cooling schedules on an EFL-15 graph.  This graph is stored in the "EFL_FIFTEEN_EXAMPLE" data variable.  It should be noted that when $k>25$, the process can take over an hour.
+
+The following produces Plot 7.11 in the associated thesis.
+```{r, message=FALSE, cache=TRUE, fig.height = 3, fig.width = 7, eval=FALSE}
+#Greedy
+set.seed(142)
+results_Greedy<-runSavi(EFL_FIFTEEN_EXAMPLE,15,"Greedy",10000,myScoringFunction)
+plot(results_Greedy$scoreArr)
+```
+
+```{r, message=FALSE, cache=TRUE, fig.height = 3, fig.width = 7, eval=FALSE}
+#Log
+set.seed(142)
+results_Log<-runSavi(EFL_FIFTEEN_EXAMPLE,15,"Log",c(10000,1000,1),myScoringFunction)
+plot(results_Log$scoreArr)
+```
+
+```{r, message=FALSE, cache=TRUE, fig.height = 3, fig.width = 7, eval=FALSE}
+#Step
+set.seed(142)
+results_LongStep<-runSavi(EFL_FIFTEEN_EXAMPLE,15,"Step",c(10000,1000,100,0.8),myScoringFunction)
+plot(results_LongStep$scoreArr)
+```
+
+The following produces Plot 7.12 in the associated thesis.
+```{r, message=FALSE, cache=TRUE, fig.height = 3, fig.width = 7, eval=FALSE}
+#Adaptive
+set.seed(142)
+results_Adaptive<-runSavi(EFL_FIFTEEN_EXAMPLE,15,"Adaptive",c(10000,1000,100,0.8,0),myScoringFunction)
+plot(results_Adaptive$scoreArr)
+```
+

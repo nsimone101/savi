@@ -1,0 +1,127 @@
+#' Run Simmulated Annealing on Groups of Vertices
+#'
+#' This is the main function of package.  It takes in an existing
+#' igraph or parameters to make an igraph with random edges.  It
+#' then runs simulated annealing to try to find the lowest scoring
+#' state of the graph.  The "state" of the graph is determined by
+#' which vertices are in which vertex group.
+#'
+#' @param initalGraphState An igraph with groups assigned to all
+#'     vertices.  This configuration is the inital graph state.  If
+#'     no groups are assigned, runSavi will throw an error.
+#' @param numOfVertexGroups The desired number of vertex groups for
+#'     the graph.  It is required that this number be greater than
+#'     1 or the function runSavi will throw an error.  It is
+#'     recommended that the number be less than the number of
+#'     vertices in the graph.
+#' @param coolingScheduleType The type of cooling schedule used
+#'     which can be customized by using the parameter
+#'     "coolingScheduleParams."  There are currently 4 options.
+#'     The argument "Greedy" implements an algorithm which only
+#'     moves to a lower (or possibly equal) score.  The argument
+#'     "Log" implements a schedule that cools based on a logarithmic
+#'     function.  The argument "Step" implements a schedule that
+#'     follows a step function.  Finally, the arguement "Adaptive"
+#'     will implement a cooling schedule that automatically
+#'     determines when to lower the temperature based on the
+#'     previous scores.
+#' @param coolingScheduleParams A vector of parameters that should
+#'     be based on the coolingScheduleType chosen.  For "Greedy,"
+#'     pass the number of iterations to use.  For "Log," pass
+#'     the number of iterations to use, the alpha constant, and
+#'     the beta constant.  Note both alpha and beta must be greater
+#'     than 0.  For "Step," pass  the total number of iterations to
+#'     run, the initial temperature, the number of iterations to run
+#'     before moving down a step, and the percent to step down with.
+#'     Note, the percent to step down with must be in the interval
+#'     (0,1).  For "Adaptive," pass the total number of iterations
+#'     to run, the initial temperature, the number of iterations to
+#'     run before checking to lower the temperature, the percent to
+#'     step down with, and the threshold of the difference in scores
+#'     for the temperature to lower.  Note that the number of iterations
+#'     to run before checking to lower the temperature must be an
+#'     even  integer. Further, the percent to step down with must be
+#'     in the interval (0,1).
+#' @param scoringFunction A function that returns a value greater
+#'     than or equal to zero.
+#' @param addOutput An integer whose default is zero.  If given a
+#'     number, the code will print out the current temperature
+#'     and current minimum score found on the multiples of that number.
+#' @param useStrict A boolean whose default is FALSE.  If TRUE, the
+#'     algorithm will only accept a new proposed state of the graph if
+#'     its score is strictly less than current state's score. Otherwise,
+#'     it will accept a new proposed state of the graph if its score is
+#'     less than or equal to the current state's score.
+#' @return The graph state with the minimum score, the minimum score,
+#'     an array of the score at a given iteration, and an array of the
+#'     temperature at a given iteration.
+#' @examples
+#'     runSavi(g,3,"Greedy",10000,myScoringFunction)
+#'     runSavi(g,3,"Log",c(10000,1000,1),myScoringFunction)
+#'     runSavi(g,3,"Step",c(10000,20,1000,0.8),myScoringFunction)
+#'     runSavi(g,3,"Adaptive",c(10000,100,100,0.8,0),myScoringFunction)
+#'     runSavi(g,3,"Adaptive",c(10000,100,100,0.8,0),myScoringFunction,addOutput=100)
+#' @export
+#'
+runSavi<-function(initialGraphState,numOfVertexGroups,coolingScheduleType,coolingScheduleParams,scoringFunction,addOutput=0,useStrict=FALSE){
+  #Initialize variables
+  params<-extractParams(coolingScheduleType,coolingScheduleParams)
+
+  if(numOfVertexGroups<=1){
+    stop('runSavi: The vertex attribute "group" must have at least 2 different groups.')
+  }
+
+  if(length(V(initialGraphState)$group)<length(V(initialGraphState))){
+    stop('runSavi: All vertice must be assigned to a group.  To assign groups randomly use the function savi::addRandomGroups')
+  }
+
+  minScore<- -1
+  minGraphState<-initialGraphState
+  currGraphState<-initialGraphState
+
+  for(i in c(1:params$iterations)){
+    #Get the current graph state's score
+    currScore <- scoringFunction(currGraphState)
+
+    #Add current score to array
+    params$scoreArr<-c(params$scoreArr,currScore)
+
+    #Keep track of minimum score and the graph state with the minimum score
+    if(currScore<minScore | minScore==-1){
+      minScore<-currScore
+      minGraphState<-currGraphState
+    }
+
+    #Get a proposed graph state
+    propGraphState <- getPropGraphState(currGraphState,numOfVertexGroups)
+
+    #Get propsed graph state's score
+    propScore <- scoringFunction(propGraphState)
+
+    if(compareScore(propScore, currScore, useStrict) | moveToPropGraphStateAnyway(propScore,currScore,params)){
+      currGraphState <- propGraphState
+    }
+
+    #update other parameters as needed
+    params<-updateParameters(params,i)
+
+    if(addOutput!=0 & i%%addOutput==0){
+      print(paste("Iteration:",i,"| Temp:",params$currTemp, "| Minscore",minScore))
+    }
+  }
+
+  #Add last current score to array
+  currScore <- scoringFunction(currGraphState)
+  params$scoreArr<-c(params$scoreArr,currScore)
+  if(currScore<minScore){
+    minScore<-currScore
+    minGraphState<-currGraphState
+  }
+
+  #Return results
+  resultList<-list(minGraphState=minGraphState,
+                   minScore=minScore,
+                   scoreArr=params$scoreArr,
+                   tempArr=params$tempArr)
+  return(resultList)
+}

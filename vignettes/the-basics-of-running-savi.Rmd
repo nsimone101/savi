@@ -1,0 +1,355 @@
+---
+title: "The Basics of Running Savi"
+author: "Nick Simone"
+date: "Last Modified: `r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The Basics of Running Savi}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+------
+Abstract:
+   This vignette explains the basics of using the package savi.  A typical implementation of the package is to create a connected graph g, choose a cooling schedule, and then run the simulated annealing.  All graphs should be built with the package "igraph" and have a vertex attribute called "group."  The cooling schedule can be logarithmic, a step function, or adapt to the simulation's behavior with parameters detailed below.  Though there are only three options, the implementation allows for a fair degree of variability.  The "Greedy" algorithm can also be implemented where only lower scores are chosen while moving through the possible states of the graph.  This option helps create a baseline for comparing the various cooling schedules. 
+------
+
+## 1) Creating Graphs with Savi
+   Currently you can create two types of graphs with savi.  The first is a random connected graph with a specified number of vertices and a probability of whether each edge connects to another.  These arguments must be in an array.  Note also that a higher probability will result in a greater number of edges between vertices.  If the probability is 1, a complete graph is created.  If the probability is 0, a star graph is created.  This is because savi will not create a disconnected graph.  Instead, it will add the minimum number of edges to create a complete graph.  
+   
+```{r message=FALSE}
+library(savi)
+```
+```{r cache=TRUE}
+#Creates a connected graph with 10 vertices and random edges
+g<-createSaviGraph("Connected",c(10,0.2))
+```
+
+   You can also create a randomized graph that follows the conditions for the Erdos-Faber-Lovazs (EFL) conjecture.  The conditions are that a connected graph $G$ is made of $k$ $k$-complete subgraphs, any pair of which only share at most one vertex in $G$.  The code randomly decides which vertices are shared by which $k$-complete subgraphs.  
+
+```{r cache=TRUE}
+#Creates a random graph that follows the EFL conjecture
+#In this case, it will connect 4 4-complete subgraphs together randomly.
+g<-createSaviGraph("EFL",4)
+```
+
+   There are also many different functions built into the package igraph that can create custom graphs.
+
+   In order to run savi properly, the user must also create the vertex attribute "group."  If you want to assign groups randomly, you can use the addRandomGroups function.  
+
+```{r cache=TRUE}
+#Creates a connected graph with 10 vertices and random edges
+g<-createSaviGraph("Connected",c(10,0.2))
+
+#Randomly puts the vertices of graph g into 3 groups.  Note some groups may be empty.
+g<-addRandomGroups(g,3)
+```
+   
+## 2) Graphing with Groups
+
+  If you wish to visualize a graph with vertex groups, you can use the plotWithGroups function.  This labels the vertices numerically and colors them based on the group they're in.  Currently, the first 6 groups have pre-defined colors:
+
+1. "lightblue"
+1. "lightyellow"
+1. "tomato"
+1. "lightgreen"
+1. "hotpink2"
+1. "gray"
+
+  If more than 6 groups are in the graph, all groups are randomly assigned colors.  There are currently 657 unique colors in r.  If you have more vertex groups than that, the colors may repeat.  However, visualization becomes difficult with a large amount of groups.  
+  
+  Finally, note that you can make every vertex white by passing in 0 as the number of vertex groups.  If passed a negative number or a non-integer, the code will throw an error.  
+
+Example:
+
+```{r cache=TRUE, fig.height = 4, fig.width = 6, fig.align='center'}
+#Creates a connected graph with 10 vertices and random edges
+g<-createSaviGraph("Connected",c(10,0.2))
+
+#Randomly puts the vertices of graph g into 3 groups.  
+g<-addRandomGroups(g,3)
+
+#The three different colors represent the three different groups
+#Note that since we allow empty groups, it is important to specify
+# the number of vertex groups in the graph.
+plotWithGroups(g,3)
+```
+
+## 3) Empty Groups
+Note that savi does allow for empty groups.  So, you may pass it an initial graph with vertices {1,2,3,4,5} in group 1, vertex 6 in group 3, and no vertices in group 2.  However, note that you must tell the plotWithGroups function how many groups you have.
+
+```{r, fig.height = 4, fig.width = 6, fig.align='center', cache=TRUE}
+adjm<-matrix(c(0,0,1,1,1,1,
+               0,0,1,1,1,1,
+               1,1,0,0,1,1,
+               1,1,0,0,1,1,
+               1,1,1,1,0,0,
+               1,1,1,1,0,0),
+             nrow=6,
+             ncol=6,
+             byrow = TRUE)
+
+g=graph_from_adjacency_matrix(adjm, mode=c("undirected"))
+
+#Set the groups for the inital graph manually
+V(g)$group=c(1,1,1,1,1,3)
+
+#Note we tell the function there are 3 groups
+plotWithGroups(g,3)
+```
+
+Additionally, note that the initial graph above does not have a group 2 in it, but the following code would run fine.  Thus empty groups are allowed, provided that you pass in how many groups you wish to have.  
+
+```{r, fig.height = 4, fig.width = 6, fig.align='center', eval=FALSE}
+results_Greedy<-runSavi(g,3,"Greedy",c(500),myScoringFunction)
+plotWithGroups(results_Greedy$minGraph)
+```
+
+## 4) Writing a Scoring Function
+  This function is made on a case by case basis, but here are some recommendations.  First, this function will be called every iteration, so try to make it as quick and efficient as possible.  Secondly, it must return a value greater than or equal to 0.  Further, savi will always try and find the lowest score, so lower scores should be "better" than higher scores.  Finally, don't manipulate the graph in the function.  For example, adding or removing vertices from the graph in the the scoring function may interfere with other parts of the algorithm.  Simply make a calculation.  Here is an example scoring function for testing vertex covering.
+  
+```{r cache=TRUE}
+myScoringFunction<-function(g){
+  #Number of On Vertices
+  onVert=length(which(V(g)$group==2))
+  
+  #Number of edges covered by on vertices
+  e1<-length(E(g)[from(which(V(g)$group==2))])
+  eTotal<-length(E(g))
+  
+  return(onVert + (1.1*(eTotal-e1)))
+}
+```
+
+  For maximum efficiency, we avoid using loops and instead use efficient functions from the igraph package.  Note also that the function does not manipulate the graph and only reads information from it.  Finally, note that the score can never be below zero.  
+
+## 5) Creating a non-random graph
+   To compare the various cooling schedules, we will run the greedy algorithm and the cooling schedules on the same graph $g$ and with the same scoring function.  Specifically, we will use the scoring function shown above.  The graph $g$ will be a connected graph with 8 vertices and 2 groups.  Since we want a specific graph, we need to build it without using the function createSaviGraph, which creates random graphs.  
+   
+   To do this, we use the built-in igraph functions.  We first create an adjacency matrix where a 1 means the vertices (i,j) are adjacent and a 0 means they're not.  Secondly, we assign each vertex a group.  We can do this randomly with addRandomGroups or we can set them manually as shown below.  Finally, we can use the plotWithGroups function to see graph we are trying to optimize.  
+   
+```{r cache=TRUE, fig.height = 4, fig.width = 6, fig.align='center'}
+#Create an adjacency matrix 
+adjm<-matrix(c(0,1,1,0,0,0,0,0,
+               1,0,1,1,0,0,0,0,
+               1,1,0,1,1,0,0,0,
+               0,1,1,0,1,1,0,0,
+               0,0,1,1,0,0,1,0,
+               0,0,0,1,0,0,0,1,
+               0,0,0,0,1,0,0,1,
+               0,0,0,0,0,1,1,0),
+             nrow=8,
+             ncol=8,
+             byrow = TRUE)
+
+#Use igraph function graph_from_adjacency_matrix
+g=graph_from_adjacency_matrix(adjm, mode=c("undirected"))
+
+#Set hald the groups to 1 and the other to 2
+V(g)$group=c(1,1,1,1,2,2,2,2)
+
+#Plot the graph g
+plotWithGroups(g,2)
+```
+
+## 6) The Greedy Algorithm
+   Our main goal is to start at some initial solution and move through other possible solutions until we find the solution with the smallest score.  A simple method to find the smallest score is to move to a new solution only when doing so would result in a lower or equal score.  This method is called the "greedy algorithm."  We will use the graph we created in the previous problem to study this algorithm and the cooling schedules.
+
+   As the name implies, the greedy algorithm doesn't follow a cooling schedule that affects its acceptance probability.  It simply moves to the first score that is lower than or equal to the current one with no chance of accepting a worse score.  As such, the "temperature" array is a list of 0's.  Thus, the greedy algorithm can be thought of as running a cooling schedule that stays at temperature 0.  This algorithm is often good enough to find an optimal solution, especially in simple cases.  It can be implemented on the above graph with the following code.  
+
+```{r cache=TRUE}
+set.seed(142)
+
+#The greedy algorithm ran on the created graph in part 4)
+results_Greedy<-runSavi(g,2,"Greedy",500,myScoringFunction)
+```
+
+   Note that the fourth argument should contain an array of arguments for the cooling schedule.  However, the greedy algorithm only requires one.  This argument is the number of iterations to run the simulation.  In this case, we run it for 500 iterations.  To produce the same result repeatedly, we set the seed before running the annealing.  
+
+   The function runSavi returns several pieces of data: the graph in its initial state, the graph's state when the smallest score was found, the smallest score found, the score array, and the temperature array.  The temperature array is what dictates the cooling schedule and is the main difference between each one.  The higher the temperature, the more accepting of worse scores the algorithm is.  As you can see below, the greedy algorithm remains at temperature 0 for the entire process.
+
+```{r cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+plot(results_Greedy$tempArr, main="Greedy Algorithm: Temperature",xlab="Iteration",ylab="Temperature")
+```
+
+## 7) The Logarithmic Cooling Schedule
+   The first type of cooling schedule is logarithmic.  It determines the temperature using a function of the following form:
+   
+   $$T(i)=log\left(\frac{\alpha}{\beta+i}\right)$$ 
+   
+   Here, T is the temperature, i is the iteration and $\alpha$ and $\beta$ are constants.  This schedule is interesting because there is a theoretical result that states for any problem, there exists a cooling schedule of the above form. (Chang)  However, in practice, it is not a practical schedule.  This is because we have no way of knowing the proper alpha and beta parameters, nor how many iterations we need to run.  It can be ran by with the code below.  
+
+```{r cache=TRUE}
+set.seed(142)
+
+#The logarithmic cooling schedule ran on the created graph in part 4)
+results_Log<-runSavi(g,2,"Log",c(500,10,1),myScoringFunction)
+```
+
+  Note that the fourth argument is now an array as we must pass several parameters for this cooling schedule.  These are the number of iterations to run, $\alpha$, and $\beta$.  Here we set the iterations to 500, $\alpha$ to 10, and $\beta$ to 1.
+   
+  Below is the resulting temperature array.  Unlike the greedy algorithm, we can see that the temperatue drops in a curved manner.  This means the algorithm is more willing to accept a worse score and look at another solution in the beginning.  However, as the temperature decreases, the algorithm will slowly become more stringent in choosing whether or not to move to a worse score.
+  
+```{r cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+plot(results_Log$tempArr, main="Logarithmic Schedule: Temperature", xlab="Iteration", ylab="Temperature")
+```
+
+## 8) The Step Cooling Schedule
+
+   The second type of cooling schedule is the step function.  Here, we start at a given temperate, allow the program to run at this temprature for a given amout of iterations, and then lower it to a new temperature.  Like the above schedule, we need to specify some parameters.  Here, we specify the number of iterations to run, the initial temperature, the number of iterations to run before stepping down, and the amount at which we step down.  Note that the amount we step down $p$ is a percentage of the current temperature and should be in the interval (0,1).
+
+   These parameters can be used to create a wide variety of cooling schedules.  On one extreme, we might choose to start at a low temperature and cool over long intervals.  For example,
+
+```{r cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+set.seed(142)
+
+#The long step cooling schedule ran on the created graph in part 4)
+results_StepLong<-runSavi(g,2,"Step",c(500,500,50,0.8),myScoringFunction)
+plot(results_StepLong$tempArr, main="Long Step Schedule: Temperature", xlab="Iteration", ylab="Temperature")
+```
+
+   This implementation would start at temperature 500 and step down 10 times since 500/50 = 10.  Each step, the temperature is multiplied by 0.8.  Thus, every 50 iterations, we would step down in this order: 500,400,320,256,....  
+
+   We could also choose to start at a high temperature and proceed down in short intervals. For example,
+
+```{r cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+set.seed(142)
+
+#The short step cooling schedule ran on the created graph in part 4)
+results_StepShort<-runSavi(g,2,"Step",c(500,500,1,0.98),myScoringFunction)
+plot(results_StepShort$tempArr, main="Short Step Schedule: Temperature", xlab="Iteration", ylab="Temperature")
+```
+
+   This produces a smooth curved line for our temperature since we are lowering the temperature by a tiny amount and over many steps. Specifically, we are multiplying 500 by 0.98 500 times.  Thus, we can find our final temperature by the following equation.  Here, $I$ is the initial temperature, $p$ is the amount we step down, $n$ is the number of iterations ran, and $F$ is the final temperature.  
+   
+   $$I(p^{n})=F$$
+   
+   Plugging in our parameters, we find the following final temperature.  
+   
+   $$500(0.98^{500}) \approx 0.02$$  
+   
+    
+   
+## 9) The Adaptive Cooling Schedule
+   
+The third type of cooling schedule is "Adaptive."  It works similarly to the Step schedule, but the program determines when to lower the temperature based on the score's recent behavior.  
+
+For example, at each temperature, we may wish to let the program run for at least 1000 iterations.  However, instead of stepping down immediately, we first evaluate whether or not the score has improved at that temperature.  We do this by splitting the previous 1000 iterations into two groups, the first half (1-500) and the second half (501-1000).  We then take the average score of the first and second half.  
+
+If the average score of the second half is greater than or equal to the first half, the score has not improved.  In this case, we stay at the current temperature instead of lowering it.  Lowering the temperature forces the algorithm to take less chances and lowers the odds of improving the score.  So we must continue running the annealing at the current temperature.  However, the algorithm now checks for improvement at every iteration and lowers the temperature as soon as improvement is found.  
+
+On the other hand, if the average score of the second half is lower, then the score has improved.  Thus, we can lower the temperature.  Though this further constrains the algorithm, doing so brings us closer to our ultimate goal of approaching temperature 0.  After we step down to the new temperature, we again wait 1000 iterations before checking our progress.  Below is an example of how to implement this schedule.
+
+```{r cache=TRUE}
+set.seed(142)
+#The basic adaptive cooling schedule ran on the created graph in part 4)
+results_Adaptive<-runSavi(g,2,"Adaptive",c(500,500,20,0.8,0),myScoringFunction)
+```
+
+Here we can see that 5 cooling schedule parameters are needed in the fourth argument of runSavi.  Parameters 1,2, and 4 are the same as the step cooling schedule above.  
+
+The third parameter is now how many previous iterations we use when evaluating if the score is improving.  In the example above, we use 20 previous iterations.  Note that we will always wait until the algorithm has ran 20 iterations at the current temperature before the evaluation.  Secondly, this parameter must be an even number since we are dividing the iterations into two groups.  Savi will throw an error if you try to run the adaptive schedule with an odd number for this parameter.
+
+The fifth parameter is the fluctuation threshold (flucThreshold).  When this parmeter is defined as 0, the schedule will work as described above.  However, suppose we wish to lower the score even if the average second half of the scores is 3 higher than the first half of the scores.  Though it is not necessarily an improvement, we may want to move to a lower temperature anyway.  This makes the program more accepting and may lower the temperature at a faster rate.  To implement this, we would set the fluctuation threshold to 3, as shown below.
+
+```{r cache=TRUE}
+set.seed(142)
+#The accepting adaptive cooling schedule ran on the created graph in part 4)
+results_AcceptingAdaptive<-runSavi(g,2,"Adaptive",c(500,500,20,0.8,3),myScoringFunction)
+```
+
+Now suppose we wish to make it more difficult for the program to lower the score.  For example, we may wish to move to a lower temperature only if the average second half of the scores is 3 lower than the average first half of the scores.  This puts a harsher constraint on lowering the temperature which may keep the schedule at higher temperatures for longer periods of time.  To implement this, we would set the fluctuation threshold to -3, as shown below.
+
+```{r cache=TRUE}
+set.seed(142)
+#The strict adaptive cooling schedule ran on the created graph in part 4)
+results_StrictAdaptive<-runSavi(g,2,"Adaptive",c(500,500,20,0.8,-3),myScoringFunction)
+```
+
+Finally, we can see how all of this affects the the adaptive cooling schedule.  Below is the graph of the basic implementation when the fluctuation threshold is 0.
+
+```{r cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+#Basic implementation temperature graph
+plot(results_Adaptive$tempArr, main="Basic Adaptive Schedule: Temperature", xlab="Iteration", ylab="Temperature")
+```
+
+As you can see, there are some temperatures the algorithm stays for a longer duration.  However, remember that it will always stay for at least 20 iterations in this example.  Below is the same schedule with the threshold set to 3.  
+
+```{r cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+#Accepting implementation temperature graph
+plot(results_AcceptingAdaptive$tempArr, main="Accepting Adaptive Schedule: Temperature", xlab="Iteration", ylab="Temperature")
+```
+
+Note that the algorithm lowers the temperature as soon as it is able to (ie after 20 iterations).  Below is the same schedule with the threshold set to -3.  
+
+```{r cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+#Strict implementation temperature graph
+plot(results_StrictAdaptive$tempArr, main="Strict Adaptive Schedule: Temperature", xlab="Iteration", ylab="Temperature")
+```
+
+Here we see the algorithm waits longer on temperature because the score must improve by 3 before moving forward.
+
+Finally, note that the scoring function is arbitrary.  This means increasing or decreasing by 3 may be alot or a little depending on how you write your scoring function.  
+
+## 10) Results Array
+The function runSavi returns several pieces of information in the results array. We can run the simulated annealing and capture the data as seen below.
+
+```{r cache=TRUE}
+set.seed(142)
+g<-createSaviGraph("Connected",c(10,0.2))
+g<-addRandomGroups(g,2)
+
+#Capture the results in an array
+results<-runSavi(g,2,"Adaptive",c(1000,50,20,0.8,0),myScoringFunction)
+```
+
+First, savi returns the minimal score found.  It should be noted that this is not necessarily the last score in the score array.  Instead, runSavi finds the minimum in the whole array.  This can be helpful to compare schedules with each other or with the greedy algorithm.  
+
+Second, savi returns the state of the graph with the minimum score found as an igraph.
+
+Third, savi returns the score array.  This may be plotted to see how much the score changes over the iterations.
+
+```{r cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+plot(results$scoreArr, main="Adaptive Schedule: Score", xlab="Iteration", ylab="Score")
+```
+
+Finally, the temperature array is also returned.  You can plot this to see how quickly or how slowly your cooling schedule drops.  Note that the array for the greedy algorithm will be an array of all zeroes.
+
+```{r cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+plot(results$tempArr, main="Adaptive Schedule: Temperature", xlab="Iteration", ylab="Temperature")
+```
+
+## 11) Producing Output at Intervals
+There is an option "addOutput" in the arguments of runSavi.  The default value is 0, which tells the program to not print out anything.  However, if you set the value to a positive number, it will print out the current iteration, temperature, and minimum score every multiple of that number.  For example, the following code would print the output every 100th iteration:
+
+```{r cache=TRUE, results = FALSE}
+set.seed(142)
+g<-createSaviGraph("Connected",c(10,0.2))
+g<-addRandomGroups(g,2)
+
+#This will produce an output every 100 iterations.
+results<-runSavi(g,2,"Adaptive",c(1000,50,20,0.8,0),myScoringFunction,100)
+```
+
+## 12) Strictly Less Than Argument
+There is also an important argument for runSavi that can affect how the greedy algorithm (and any other cooling schedule) performs.  Recall that the greedy algorithm only moves to states with lower or equal scores.  The argument useStrict changes the behavior to only move to states with scores strictly less than the current state's score.  By default useStrict is set to FALSE.  
+
+Note that this argument can make a difference when running the greedy algorithm.  However, its effects on simulated annealing are negligible.  The reasons behind this are outlined in Section 7 of the associated thesis.  A discussion can also be found in the "Savi and the Erdős–Faber–Lovász Conjecture" vignette.  The code below runs the greedy algorithm with useStrict set to TRUE.
+
+```{r cache=TRUE}
+set.seed(142)
+g<-createSaviGraph("Connected",c(10,0.2))
+g<-addRandomGroups(g,2)
+
+#This will run the greedy algorithm such that it will 
+#  only move to a state with a lower score.  
+results_Greedy<-runSavi(g,2,"Greedy",500,myScoringFunction,useStrict=TRUE)
+```
+

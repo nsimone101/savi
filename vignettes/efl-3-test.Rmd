@@ -1,0 +1,176 @@
+---
+title: "EFL-3 Test"
+author: "Nick Simone"
+date: "Last Modified: `r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{EFL-3 Test}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+------
+Abstract:
+   The following code checks if any EFL-3 graph has a strict local minimum state.  It does this by exhaustively checking each possible state for each EFL-3 graph.  No strict local minimum states were found.  For a more indepth analysis, see the associated thesis.
+------
+
+```{r, message=FALSE, cache=TRUE, eval=FALSE}
+library(savi)
+
+#Set the Scoring Function
+myScoreFunction<-function(g){
+  #Get the number of Groups
+  numOfGroups<-max(V(g)$group)
+
+  #Count the number of inter-group edges
+  s<-0
+  for(i in c(1:numOfGroups)){
+    s<-s+length(which(tail_of(g,E(g))$group==i & head_of(g,E(g))$group==i))
+  }
+
+  return(s)
+}
+
+#A function which determines if the state passed is a strict
+# local minimum state.
+isInStrictLocalMinimumState<-function(g,numOfVertexGroups){
+  inStrictLocalMinimum<-TRUE
+  scoreG<-myScoreFunction(g)
+  arr<-1:numOfVertexGroups
+
+  for(i in 1:length(V(g))){
+    for(j in arr[-V(g)$group[[i]]]){
+      h<-g
+      V(h)$group[[i]]<-j
+
+      if(scoreG==0 || myScoreFunction(h)<=scoreG){
+        inStrictLocalMinimum<-FALSE
+      }
+    }
+    if(!inStrictLocalMinimum){
+      break
+    }
+  }
+
+  return(inStrictLocalMinimum)
+}
+
+################################################
+#Main Code
+################################################
+
+#EFL-3a
+strictLocalMinsFoundEFL3a<-0
+
+adjm<-matrix(c(0,1,1,0,0,0,0,
+               1,0,1,0,0,0,0,
+               1,1,0,1,1,0,0,
+               0,0,1,0,1,0,0,
+               0,0,1,1,0,1,1,
+               0,0,0,0,1,0,1,
+               0,0,0,0,1,1,0),
+             nrow=7,
+             ncol=7,
+             byrow = TRUE)
+g=graph_from_adjacency_matrix(adjm, mode=c("undirected"))
+
+for(a in 1:3){
+  for(b in 1:3){
+    for(c in 1:3){
+      for(d in 1:3){
+        for(e in 1:3){
+          for(f in 1:3){
+            for(x in 1:3){
+              V(g)$group<-c(a,b,c,d,e,f,x)
+              if(isInStrictLocalMinimumState(g,3)){
+                strictLocalMinsFoundEFL3a<-strictLocalMinsFoundEFL3a+1
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+print(paste("Found",strictLocalMinsFoundEFL3a,"strict local minimum states for graph EFL-3a"))
+
+
+#EFL-3b
+strictLocalMinsFoundEFL3b<-0
+
+adjm<-matrix(c(0,1,1,1,1,1,1,
+               1,0,1,0,0,0,0,
+               1,1,0,0,0,0,0,
+               1,0,0,0,1,0,0,
+               1,0,0,1,0,0,0,
+               1,0,0,0,0,0,1,
+               1,0,0,0,0,1,0),
+             nrow=7,
+             ncol=7,
+             byrow = TRUE)
+g=graph_from_adjacency_matrix(adjm, mode=c("undirected"))
+
+for(a in 1:3){
+  for(b in 1:3){
+    for(c in 1:3){
+      for(d in 1:3){
+        for(e in 1:3){
+          for(f in 1:3){
+            for(x in 1:3){
+              V(g)$group<-c(a,b,c,d,e,f,x)
+              if(isInStrictLocalMinimumState(g,3)){
+                strictLocalMinsFoundEFL3b<-strictLocalMinsFoundEFL3b+1
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+print(paste("Found",strictLocalMinsFoundEFL3b,"strict local minimum states for graph EFL-3b"))
+
+
+#EFL-3c
+strcitLocalMinsFoundEFL3c<-0
+
+adjm<-matrix(c(0,1,1,0,0,0,
+               1,0,1,0,1,1,
+               1,1,0,1,1,0,
+               0,0,1,0,1,0,
+               0,1,1,1,0,1,
+               0,1,0,0,1,0),
+             nrow=6,
+             ncol=6,
+             byrow = TRUE)
+g=graph_from_adjacency_matrix(adjm, mode=c("undirected"))
+
+for(a in 1:3){
+  for(b in 1:3){
+    for(c in 1:3){
+      for(d in 1:3){
+        for(e in 1:3){
+          for(f in 1:3){
+            V(g)$group<-c(a,b,c,d,e,f)
+            if(isInStrictLocalMinimumState(g,3)){
+              strcitLocalMinsFoundEFL3c<-strcitLocalMinsFoundEFL3c+1
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+print(paste("Found",strcitLocalMinsFoundEFL3c,"strict local minimum states for graph EFL-3c"))
+
+```
