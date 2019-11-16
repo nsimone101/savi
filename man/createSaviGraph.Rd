@@ -11,7 +11,9 @@ createSaviGraph(graphType, graphParams)
 graphs currently available. The first is a random connected
 graph ("Connected").  The other is the EFL graph ("EFL"),
 which creates a random graph that conforms to the given
-conditions of the Erdős–Faber–Lovász conjecture.}
+conditions of the Erdős–Faber–Lovász conjecture. Note that
+this implementation will not create all possible EFL graphs.
+However, the graph created will always be an EFL graph.}
 
 \item{graphParams}{When the graph type is "Connected," the next
 two arguements should be the number of verticies desired and

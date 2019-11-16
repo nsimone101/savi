@@ -32,7 +32,7 @@ library(savi)
 g<-createSaviGraph("Connected",c(10,0.2))
 ```
 
-   You can also create a randomized graph that follows the conditions for the Erdos-Faber-Lovazs (EFL) conjecture.  The conditions are that a connected graph $G$ is made of $k$ $k$-complete subgraphs, any pair of which only share at most one vertex in $G$.  The code randomly decides which vertices are shared by which $k$-complete subgraphs.  
+   You can also create a randomized graph that follows the conditions for the Erdos-Faber-Lovazs (EFL) conjecture.  The conditions are that a connected graph $G$ is made of $k$ $k$-complete subgraphs, any pair of which only share at most one vertex in $G$.  The code randomly decides which vertices are shared by which $k$-complete subgraphs.  Note that this implementation will not create all possible EFL graphs.  However, the graph created will always be an EFL graph.  
 
 ```{r cache=TRUE}
 #Creates a random graph that follows the EFL conjecture

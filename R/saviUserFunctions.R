@@ -24,7 +24,9 @@ addRandomGroups<-function(g,numOfVertexGroups){
 #'     graphs currently available. The first is a random connected
 #'     graph ("Connected").  The other is the EFL graph ("EFL"),
 #'     which creates a random graph that conforms to the given
-#'     conditions of the Erdős–Faber–Lovász conjecture.
+#'     conditions of the Erdős–Faber–Lovász conjecture. Note that
+#'     this implementation will not create all possible EFL graphs.
+#'     However, the graph created will always be an EFL graph.
 #' @param graphParams When the graph type is "Connected," the next
 #'     two arguements should be the number of verticies desired and
 #'     the second arguement should be the probability of each vertex
@@ -42,35 +44,21 @@ createSaviGraph<-function(graphType,graphParams){
   if(graphType=="EFL"){
     k<-graphParams[1]
     g<-rep(make_full_graph(k, directed = FALSE, loops = FALSE), k)
+    arr<-c(1:k^2)
 
-    while(components(g)$no>1){
-      #Make a disjoint graph of k complete graphs
-      g<-rep(make_full_graph(k, directed = FALSE, loops = FALSE), k)
+    for(i in (1:(k-1))){
+      s1<-c((k*(i-1)+1):(k*i))
+      s2<-c(((k*i)+1):(k*(i+1)))
 
-      #Create a matrix of random connections
-      mat <- matrix(sample(0:1, k^2, replace=TRUE, prob=c(0.5,0.5)), nc=k)
-      mat[lower.tri(mat,diag=TRUE)] <- 0
+      vr1<-sampleOne(s1)
+      vr2<-sampleOne(s2)
 
-      #Keep trying to make a new one until it's all connected
-      while(length(which(rowSums(mat)==0))>1){
-        mat <- matrix(sample(0:1, k^2, replace=TRUE, prob=c(0.5,0.5)), nc=k)
-        mat[lower.tri(mat,diag=TRUE)] <- 0
-      }
-
-      arr<-c(1:k^2)
-      #Loop through diagonal of matrix
-      for(i in c(1:(k-1))){
-        for(j in c((i+1):k)){
-          if(mat[i,j]==1){
-            vr1<-sampleOne(c((k*(i-1)+1):(i*k)))
-            vr2<-sampleOne(c((k*(j-1)+1):(j*k)))
-            arr[vr1]<-arr[vr2]
-          }
-        }
-      }
-      g<-simplify(contract.vertices(g,arr))
-      g<-delete.vertices(g,degree(g)==0)
+      arr[vr2]<-arr[vr1]
     }
+
+    g<-simplify(contract.vertices(g,arr))
+    g<-delete.vertices(g,degree(g)==0)
+
     return(g)
   }
 
