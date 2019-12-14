@@ -1,7 +1,7 @@
 Package: savi
 Type: Package
 Title: An implementation of Simulated Annealing on Groups of Vectors
-Version: 1.2.1
+Version: 1.2.2
 Author: Nick Simone
 Maintainer: The package maintainer <yourself@somewhere.net>
 Description: This package is used to implement Simulated Annealing with Vertex Inputs (savi).  

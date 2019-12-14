@@ -23,7 +23,7 @@ Abstract:
    In this case, a score of 0 was reached every time.  This is evidence that no strict local minimum states exist in an EFL-4 graph.  For a more indepth analysis, see the associated thesis.
 ------
 
-```{r, message=FALSE, cache=TRUE, eval=FALSE}
+```{r, message=FALSE, eval=FALSE}
 library(savi)
 
 #set seed

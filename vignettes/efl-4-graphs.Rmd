@@ -21,7 +21,7 @@ Abstract:
    The code below plots the nine EFL-4 graphs tested by the code in the vignette "EFL-4 Test."  These graphs are stored as variables in the data of the savi package.  The variable names are given in the comments.
 ------
 
-```{r, message=FALSE, cache=TRUE, eval=FALSE}
+```{r, message=FALSE, eval=FALSE}
 library(savi)
 
 ##################################################

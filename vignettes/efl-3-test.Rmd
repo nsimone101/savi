@@ -21,7 +21,7 @@ Abstract:
    The following code checks if any EFL-3 graph has a strict local minimum state.  It does this by exhaustively checking each possible state for each EFL-3 graph.  No strict local minimum states were found.  For a more indepth analysis, see the associated thesis.
 ------
 
-```{r, message=FALSE, cache=TRUE, eval=FALSE}
+```{r, message=FALSE, eval=FALSE}
 library(savi)
 
 #Set the Scoring Function
