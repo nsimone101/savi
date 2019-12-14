@@ -9,7 +9,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, include = FALSE}
+```{r, setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -86,7 +86,7 @@ One of the main motivations for using simulated annealing over the greedy algori
 
 Below is the code that produces Figure 6.4b in the associated thesis.  The graph is in a strict local minimum state.  Because of this, the greedy algorithm fails to find the optimal score, but the annealing process is successful.  
 
-```{r fig.height = 4, fig.width = 6, fig.align='center'}
+```{r, fig.height = 4, fig.width = 6, fig.align='center'}
 adjm<-matrix(c(0,1,0,0,1,0,0,0,0,0,
                1,0,0,0,1,0,0,0,0,0,
                0,0,0,1,1,0,0,0,0,0,
@@ -109,7 +109,7 @@ plotWithGroups(g,3)
 
 We now run the greedy algorithm on this graph.  Observe that the score remains at 1.  Note that this code produces Plot 6.5 in the associated thesis.
 
-```{r fig.height = 3, fig.width = 6, fig.align='center'}
+```{r, fig.height = 3, fig.width = 6, fig.align='center'}
 set.seed(142)
 results_Greedy<-runSavi(g,3,"Greedy",500,myScoringFunction)
 plot(results_Greedy$scoreArr)
@@ -117,7 +117,7 @@ plot(results_Greedy$scoreArr)
 
 Next, we run simulated annealing with the adaptive cooling schedule.  Here, the true optimal score of 0 is found.  Thus, we have also shown that the above graph is 3-partite.  Note that this code produces Plot 6.6 in the associated thesis.
 
-```{r fig.height = 3, fig.width = 6, fig.align='center'}
+```{r, fig.height = 3, fig.width = 6, fig.align='center'}
 set.seed(142)
 results_Adaptive<-runSavi(g,3,"Adaptive",c(500,10,10,0.8,0),myScoringFunction)
 plot(results_Adaptive$scoreArr)
