@@ -4,9 +4,15 @@
 \alias{runSavi}
 \title{Run Simmulated Annealing on Groups of Vertices}
 \usage{
-runSavi(initialGraphState, numOfVertexGroups, coolingScheduleType,
-  coolingScheduleParams, scoringFunction, addOutput = 0,
-  useStrict = FALSE)
+runSavi(
+  initialGraphState,
+  numOfVertexGroups,
+  coolingScheduleType,
+  coolingScheduleParams,
+  scoringFunction,
+  addOutput = 0,
+  useStrict = FALSE
+)
 }
 \arguments{
 \item{numOfVertexGroups}{The desired number of vertex groups for
