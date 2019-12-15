@@ -86,4 +86,5 @@ which vertices are in which vertex group.
     runSavi(g,3,"Step",c(10000,20,1000,0.8),myScoringFunction)
     runSavi(g,3,"Adaptive",c(10000,100,100,0.8,0),myScoringFunction)
     runSavi(g,3,"Adaptive",c(10000,100,100,0.8,0),myScoringFunction,addOutput=100)
+    runSavi(g,3,"Adaptive",c(10000,100,100,0.8,0),myScoringFunction,addOutput=100,useStrict=TRUE)
 }

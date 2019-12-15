@@ -131,7 +131,7 @@ The following produces Figure 6.7 in the associated thesis.
 #Greedy
 set.seed(142)
 load("data/EIGHT_PARTITE_EXAMPLE.rda")
-results_Greedy<-runSavi(EIGHT_PARTITE_EXAMPLE,7,"Greedy",10000,myScoringFunction)
+results_Greedy<-runSavi(EIGHT_PARTITE_EXAMPLE,8,"Greedy",10000,myScoringFunction)
 plot(results_Greedy$scoreArr)
 ```
 
@@ -139,7 +139,7 @@ plot(results_Greedy$scoreArr)
 #Log
 set.seed(142)
 load("data/EIGHT_PARTITE_EXAMPLE.rda")
-results_Log<-runSavi(EIGHT_PARTITE_EXAMPLE,7,"Log",c(10000,1000,1),myScoringFunction)
+results_Log<-runSavi(EIGHT_PARTITE_EXAMPLE,8,"Log",c(10000,1000,1),myScoringFunction)
 plot(results_Log$scoreArr)
 ```
 
@@ -147,7 +147,7 @@ plot(results_Log$scoreArr)
 #Step
 set.seed(142)
 load("data/EIGHT_PARTITE_EXAMPLE.rda")
-results_Step<-runSavi(EIGHT_PARTITE_EXAMPLE,7,"Step",c(10000,1000,100,0.8),myScoringFunction)
+results_Step<-runSavi(EIGHT_PARTITE_EXAMPLE,8,"Step",c(10000,1000,100,0.8),myScoringFunction)
 plot(results_Step$scoreArr)
 ```
 
@@ -156,7 +156,7 @@ The following produces Figure 6.8 in the associated thesis.
 #Adaptive
 set.seed(142)
 load("data/EIGHT_PARTITE_EXAMPLE.rda")
-results_Adaptive<-runSavi(EIGHT_PARTITE_EXAMPLE,7,"Adaptive",c(10000,1000,100,0.8,0),myScoringFunction)
+results_Adaptive<-runSavi(EIGHT_PARTITE_EXAMPLE,8,"Adaptive",c(10000,1000,100,0.8,0),myScoringFunction)
 plot(results_Adaptive$scoreArr)
 ```
 
