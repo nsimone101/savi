@@ -108,7 +108,7 @@ plotWithGroups(results_Adaptive$minGraph,4)
 ```
 
 ##4) Strict Greedy vs Greedy Example
-One interesting case comes up in EFL-3 graphs.  No EFL-3 graphs have strict local minium states, but they do have local minimum states.  This means that it is possible to enter a state where you can only move to states with a lower or equal score.  Below is the code to produce such a state.  For a more indepth discussion, see Section 7 of the associated thesis.
+One interesting case comes up in EFL-3 graphs.  No EFL-3 graphs have strict local minium states, but they do have local minimum states.  This means that it is possible to enter a state where you can only move to states with a lower or equal score.  Below is the code to produce such a state.  For a more indepth discussion, see Section 7 of the associated thesis.  Note that the following code produces Figure 7.5b of the associated thesis.
 
 ```{r, message=FALSE, fig.height = 4, fig.width = 6, fig.align='center'}
 adjm<-matrix(c(0,1,1,0,0,0,0,
@@ -127,7 +127,7 @@ V(g)$group=c(1,2,3,1,3,1,2)
 plotWithGroups(g,3)
 ```
 
-We first run the strict greedy algorithm where the algorithm only moves to a state with a strictly lower score.  Note that this code produces Plot 7.9a in the associated thesis.
+We first run the strict greedy algorithm where the algorithm only moves to a state with a strictly lower score.  Note that this code produces Figure 7.6a in the associated thesis.
 
 ```{r, fig.height = 3, fig.width = 6, fig.align='center'}
 set.seed(142)
@@ -135,7 +135,7 @@ results_Strict_Greedy<-runSavi(g,3,"Greedy",500,myScoringFunction,useStrict=TRUE
 plot(results_Strict_Greedy$scoreArr)
 ```
 
-As you can see by the above graph, the strict greedy algorithm falls into and stays at this local minimum state.  Now, we run the greedy algorithm where the algorithm will move to a state with the same score or lower.  Note that this code produces Plot 7.9b in the associated thesis.
+As you can see by the above graph, the strict greedy algorithm falls into and stays at this local minimum state.  Now, we run the greedy algorithm where the algorithm will move to a state with the same score or lower.  Note that this code produces Figure 7.6b in the associated thesis.
 
 ```{r, fig.height = 3, fig.width = 6, fig.align='center'}
 set.seed(142)
@@ -146,35 +146,39 @@ plot(results_Greedy$scoreArr)
 Here, the regular greedy algorithm finds the appropriate optimal score.  This is why the default for comparing the scores of states is not strict.  It should be noted that you can set the "useStrict"" variable to TRUE when running other cooling schedules.  However, the affects of doing so are negligible since the simulated annealing process has a nonzero probability of moving to a state with a higher score already.  
 
 ##5) Large Example
-We now test the greedy algorithm and simulated annealing with three different cooling schedules on an EFL-15 graph.  This graph is stored in the "EFL_FIFTEEN_EXAMPLE" data variable.  It should be noted that when $k>25$, the process can take over an hour.
+We now test the greedy algorithm and simulated annealing with three different cooling schedules on an EFL-14 graph.  This graph is stored in the "EFL_FOURTEEN_EXAMPLE" data variable.  It should be noted that when $k>25$, the process can take over an hour.
 
-The following produces Plot 7.11 in the associated thesis.
+The following produces Plot 7.8 in the associated thesis.
 ```{r, message=FALSE, fig.height = 3, fig.width = 7, eval=FALSE}
 #Greedy
 set.seed(142)
-results_Greedy<-runSavi(EFL_FIFTEEN_EXAMPLE,15,"Greedy",10000,myScoringFunction)
+load("data/EFL_FOURTEEN_EXAMPLE.rda")
+results_Greedy<-runSavi(EFL_FOURTEEN_EXAMPLE,14,"Greedy",10000,myScoringFunction)
 plot(results_Greedy$scoreArr)
 ```
 
 ```{r, message=FALSE, fig.height = 3, fig.width = 7, eval=FALSE}
 #Log
 set.seed(142)
-results_Log<-runSavi(EFL_FIFTEEN_EXAMPLE,15,"Log",c(10000,1000,1),myScoringFunction)
+load("data/EFL_FOURTEEN_EXAMPLE.rda")
+results_Log<-runSavi(EFL_FOURTEEN_EXAMPLE,14,"Log",c(10000,1000,1),myScoringFunction)
 plot(results_Log$scoreArr)
 ```
 
 ```{r, message=FALSE, fig.height = 3, fig.width = 7, eval=FALSE}
 #Step
 set.seed(142)
-results_LongStep<-runSavi(EFL_FIFTEEN_EXAMPLE,15,"Step",c(10000,1000,100,0.8),myScoringFunction)
-plot(results_LongStep$scoreArr)
+load("data/EFL_FOURTEEN_EXAMPLE.rda")
+results_Step<-runSavi(EFL_FOURTEEN_EXAMPLE,14,"Step",c(10000,1000,100,0.8),myScoringFunction)
+plot(results_Step$scoreArr)
 ```
 
-The following produces Plot 7.12 in the associated thesis.
+The following produces Plot 7.9 in the associated thesis.
 ```{r, message=FALSE, fig.height = 3, fig.width = 7, eval=FALSE}
 #Adaptive
 set.seed(142)
-results_Adaptive<-runSavi(EFL_FIFTEEN_EXAMPLE,15,"Adaptive",c(10000,1000,100,0.8,0),myScoringFunction)
+load("data/EFL_FOURTEEN_EXAMPLE.rda")
+results_Adaptive<-runSavi(EFL_FOURTEEN_EXAMPLE,14,"Adaptive",c(15000,1000,100,0.8,0),myScoringFunction)
 plot(results_Adaptive$scoreArr)
 ```
 

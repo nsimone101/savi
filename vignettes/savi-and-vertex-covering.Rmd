@@ -32,10 +32,10 @@ We can think of the vertices as being lights that are either "on" or "off."  Add
 
 The following function is passed a state of graph $G$ then returns a nonnegative real number based on how the vertices are partitioned in that state.  This is called a scoring function.  Here, the state with the lowest score minimizes $|V_c|$.  The proof of this is in Section 5 of the associated thesis.  
 
-```{r, message=FALSE, cache=TRUE}
+```{r, message=FALSE}
 library(savi)
 ```
-```{r, cache=TRUE}
+```{r}
 myScoringFunction<-function(g){
   #Number of On Vertices
   onVert=length(which(V(g)$group==2))
@@ -53,7 +53,7 @@ myScoringFunction<-function(g){
 
 First we run the program on a graph with a known optimal solution.  The following graph has an optimal score of 4.  The code below creates the graph using a built-in function of igraph.  We will use this graph to look at the behavioral differences between the greedy algorithm and simulated annealing.  
 
-```{r, cache=TRUE}
+```{r}
 adjm<-matrix(c(0,1,1,1,0,0,
                1,0,1,1,0,0,
                1,1,0,1,1,0,
@@ -74,7 +74,7 @@ Note that the initial state of our graph is defined with all vertices in the "on
 
 Below is the code for running the greedy algorithm on the graph above.  The output is a plot of the score found at each iteration.  
 
-```{r, cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+```{r, fig.height = 3, fig.width = 6, fig.align='center'}
 set.seed(142)
 results_Greedy<-runSavi(g,2,"Greedy",500,myScoringFunction)
 plot(results_Greedy$scoreArr)
@@ -84,7 +84,7 @@ As you can see from the plot, the minimum score found is 4.  If you have trouble
 
 We now look at simulated annealing with the adaptive cooling schedule.  
 
-```{r, cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+```{r, fig.height = 3, fig.width = 6, fig.align='center'}
 set.seed(142)
 results_Adaptive<-runSavi(g,2,"Adaptive",c(500,10,20,0.8,0),myScoringFunction)
 plot(results_Adaptive$scoreArr)
@@ -96,7 +96,7 @@ This behavior of moving to higher scores also means that the minimum score may n
 
 To visualize our results, we can look at the graph in its inital and final state using the plotWithGroups function.  Note that the yellow color denotes a vertex that is "on" and the blue color denotes a vertex that is "off."
 
-```{r, cache=TRUE, fig.height = 4, fig.width = 6, fig.align='center'}
+```{r, fig.height = 4, fig.width = 6, fig.align='center'}
 #Before
 plotWithGroups(g,2)
 #After
@@ -106,9 +106,9 @@ plotWithGroups(results_Adaptive$minGraph,2)
 ## 4) Greedy Algorithm Failure Example
 One of the main motivations for using simulated annealing over the greedy algorithm is the existence of strict local minimum states.  These are states that do not produce the optimal score, but every state within one step of it has a higher score.  When the greedy algorithm moves to a such a state, it will not progress any further.  However, the annealing process has some probability to move to a state with a higher score, so the process can move away from it.  A more in depth discussion is in the associated thesis.
 
-Below is the code that produces Figure 5.5 in the associated thesis.  The graph is in a strict local minimum state.  Because of this, the greedy algorithm fails to find the optimal score, but the annealing process is successful.
+Below is the code that produces Figure 5.2 in the associated thesis.  The graph is in a strict local minimum state.  Because of this, the greedy algorithm fails to find the optimal score, but the annealing process is successful.
 
-```{r, cache=TRUE, fig.height = 4, fig.width = 6, fig.align='center'}
+```{r, fig.height = 4, fig.width = 6, fig.align='center'}
 adjm<-matrix(c(0,1,0,0,0,
                1,0,1,0,0,
                0,1,0,1,0,
@@ -125,17 +125,17 @@ V(g)$group=c(2,1,2,1,2)
 plotWithGroups(g,2)
 ```
 
-We now run the greedy algorithm on this graph.  Observe that the score remains at 3.  Note that this code produces Plot 5.7 in the associated thesis.
+We now run the greedy algorithm on this graph.  Observe that the score remains at 3.  Note that this code produces Figure 5.3 in the associated thesis.
 
-```{r, cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+```{r, fig.height = 3, fig.width = 6, fig.align='center'}
 set.seed(142)
 results_Greedy<-runSavi(g,2,"Greedy",500,myScoringFunction)
 plot(results_Greedy$scoreArr)
 ```
 
-Next, we run simulated annealing with the adaptive cooling schedule.  Here, the true optimal score of 2 is found.  Note that this code produces Plot 5.8 in the associated thesis.
+Next, we run simulated annealing with the adaptive cooling schedule.  Here, the true optimal score of 2 is found.  Note that this code produces Figure 5.4 in the associated thesis.
 
-```{r, cache=TRUE, fig.height = 3, fig.width = 6, fig.align='center'}
+```{r, fig.height = 3, fig.width = 6, fig.align='center'}
 set.seed(142)
 results_Adaptive<-runSavi(g,2,"Adaptive",c(500,10,10,0.8,0),myScoringFunction)
 plot(results_Adaptive$scoreArr)
@@ -144,34 +144,38 @@ plot(results_Adaptive$scoreArr)
 ## 5) Large Example
 We now consider a much larger graph.  In this case, we will run the greedy algorithm and simulated annealing with three different cooling schedules on a connected graph with 1000 vertices.  This graph is stored in the "VC_LARGE_EXAMPLE" data variable.  The lowest score found by the greedy algorithm was 955, but the lowest score found by simulated annealing with the adaptive cooling schedule was 952.  One explanation for this difference is that the greedy algorithm fell into a strict local minimum state.  It should be noted that each block of code takes a long time to run.  
 
-The following produces Plot 5.12 in the associated thesis.
-```{r, cache=TRUE, fig.height = 3, fig.width = 7, eval=FALSE}
+The following produces Figure 5.7 in the associated thesis.
+```{r, fig.height = 3, fig.width = 7, eval=FALSE}
 #Greedy
 set.seed(142)
+load("data/VC_LARGE_EXAMPLE.rda")
 results_Greedy<-runSavi(VC_LARGE_EXAMPLE,2,"Greedy",10000,myScoringFunction)
 plot(results_Greedy$scoreArr)
 ```
 
-The following produces Plot 5.14 in the associated thesis.
-```{r, cache=TRUE, fig.height = 3, fig.width = 7, eval=FALSE}
+The following produces Figure 5.8 in the associated thesis.
+```{r, fig.height = 3, fig.width = 7, eval=FALSE}
 #Log
 set.seed(142)
+load("data/VC_LARGE_EXAMPLE.rda")
 results_Log<-runSavi(VC_LARGE_EXAMPLE,2,"Log",c(10000,1000,1),myScoringFunction)
 plot(results_Log$scoreArr)
 ```
 
-The following produces Plot 5.15 in the associated thesis.
-```{r, message=FALSE, cache=TRUE, fig.height = 3, fig.width = 7, eval=FALSE}
+The following produces Figure 5.9 in the associated thesis.
+```{r, message=FALSE, fig.height = 3, fig.width = 7, eval=FALSE}
 #Step
 set.seed(142)
+load("data/VC_LARGE_EXAMPLE.rda")
 results_Step<-runSavi(VC_LARGE_EXAMPLE,2,"Step",c(10000,1000,100,0.8),myScoringFunction)
 plot(results_Step$scoreArr)
 ```
 
-The following produces Plot 5.16 in the associated thesis.
-```{r, cache=TRUE, fig.height = 3, fig.width = 7, eval=FALSE}
+The following produces Figure 5.10 in the associated thesis.
+```{r, fig.height = 3, fig.width = 7, eval=FALSE}
 #Adaptive
 set.seed(142)
+load("data/VC_LARGE_EXAMPLE.rda")
 results_Adaptive<-runSavi(VC_LARGE_EXAMPLE,2,"Adaptive",c(10000,1000,100,0.8,0),myScoringFunction)
 plot(results_Adaptive$scoreArr)
 ```

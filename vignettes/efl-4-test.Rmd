@@ -29,6 +29,17 @@ library(savi)
 #set seed
 set.seed(142)
 
+#load the data
+load("data/EFL4_GRAPH_1.rda")
+load("data/EFL4_GRAPH_2.rda")
+load("data/EFL4_GRAPH_3.rda")
+load("data/EFL4_GRAPH_4.rda")
+load("data/EFL4_GRAPH_5.rda")
+load("data/EFL4_GRAPH_6.rda")
+load("data/EFL4_GRAPH_7.rda")
+load("data/EFL4_GRAPH_8.rda")
+load("data/EFL4_GRAPH_9.rda")
+
 #Set the Scoring Function
 myScoreFunction<-function(g){
   #Get the number of Groups

@@ -84,7 +84,7 @@ plot(results_Adaptive$scoreArr)
 ## 4) Greedy Algorithm Failure Example
 One of the main motivations for using simulated annealing over the greedy algorithm is the existence of strict local minimum states.  These are states that do not produce the optimal score, but every state within one step of it has a higher score.  When the greedy algorithm moves to a such a state, it will not progress any further.  However, the annealing process has some probability of moving to a state with a higher score, so the process can move away from it.  A more in depth discussion is in the associated thesis.
 
-Below is the code that produces Figure 6.4b in the associated thesis.  The graph is in a strict local minimum state.  Because of this, the greedy algorithm fails to find the optimal score, but the annealing process is successful.  
+Below is the code that produces Figure 6.2b in the associated thesis.  The graph is in a strict local minimum state.  Because of this, the greedy algorithm fails to find the optimal score, but the annealing process is successful.  
 
 ```{r, fig.height = 4, fig.width = 6, fig.align='center'}
 adjm<-matrix(c(0,1,0,0,1,0,0,0,0,0,
@@ -107,7 +107,7 @@ V(g)$group=c(1,2,1,2,3,3,1,2,1,2)
 plotWithGroups(g,3)
 ```
 
-We now run the greedy algorithm on this graph.  Observe that the score remains at 1.  Note that this code produces Plot 6.5 in the associated thesis.
+We now run the greedy algorithm on this graph.  Observe that the score remains at 1.  Note that this code produces Figure 6.3 in the associated thesis.
 
 ```{r, fig.height = 3, fig.width = 6, fig.align='center'}
 set.seed(142)
@@ -115,7 +115,7 @@ results_Greedy<-runSavi(g,3,"Greedy",500,myScoringFunction)
 plot(results_Greedy$scoreArr)
 ```
 
-Next, we run simulated annealing with the adaptive cooling schedule.  Here, the true optimal score of 0 is found.  Thus, we have also shown that the above graph is 3-partite.  Note that this code produces Plot 6.6 in the associated thesis.
+Next, we run simulated annealing with the adaptive cooling schedule.  Here, the true optimal score of 0 is found.  Thus, we have also shown that the above graph is 3-partite.  Note that this code produces Figure 6.4 in the associated thesis.
 
 ```{r, fig.height = 3, fig.width = 6, fig.align='center'}
 set.seed(142)
@@ -124,35 +124,39 @@ plot(results_Adaptive$scoreArr)
 ```
 
 ## 5) Large Example
-We now consider a graph made of 50 vertices and want to see if it is 7-partite.  This graph is stored in the "SEVEN_PARTITE_EXAMPLE" data variable.  For this example, we run the greedy algorithm and simulated annealing with three different cooling schedules.  It should be noted that each block of code takes a long time to run.  
+We now consider a graph made of 50 vertices and want to see if it is 8-partite.  This graph is stored in the "EIGHT_PARTITE_EXAMPLE" data variable.  For this example, we run the greedy algorithm and simulated annealing with three different cooling schedules.  It should be noted that each block of code takes a long time to run.  Additionally, the seed is different from the above examples.
 
-The following produces Plot 6.11 in the associated thesis.
+The following produces Figure 6.7 in the associated thesis.
 ```{r, message=FALSE, fig.height = 3, fig.width = 7, eval=FALSE}
 #Greedy
 set.seed(142)
-results_Greedy<-runSavi(SEVEN_PARTITE_EXAMPLE,7,"Greedy",10000,myScoringFunction)
+load("data/EIGHT_PARTITE_EXAMPLE.rda")
+results_Greedy<-runSavi(EIGHT_PARTITE_EXAMPLE,7,"Greedy",10000,myScoringFunction)
 plot(results_Greedy$scoreArr)
 ```
 
 ```{r, message=FALSE, fig.height = 3, fig.width = 7, eval=FALSE}
 #Log
 set.seed(142)
-results_Log<-runSavi(SEVEN_PARTITE_EXAMPLE,7,"Log",c(10000,1000,1),myScoringFunction)
+load("data/EIGHT_PARTITE_EXAMPLE.rda")
+results_Log<-runSavi(EIGHT_PARTITE_EXAMPLE,7,"Log",c(10000,1000,1),myScoringFunction)
 plot(results_Log$scoreArr)
 ```
 
 ```{r, message=FALSE, fig.height = 3, fig.width = 7, eval=FALSE}
 #Step
 set.seed(142)
-results_LongStep<-runSavi(SEVEN_PARTITE_EXAMPLE,7,"Step",c(10000,1000,100,0.8),myScoringFunction)
-plot(results_LongStep$scoreArr)
+load("data/EIGHT_PARTITE_EXAMPLE.rda")
+results_Step<-runSavi(EIGHT_PARTITE_EXAMPLE,7,"Step",c(10000,1000,100,0.8),myScoringFunction)
+plot(results_Step$scoreArr)
 ```
 
-The following produces Plot 6.12 in the associated thesis.
+The following produces Figure 6.8 in the associated thesis.
 ```{r, message=FALSE, fig.height = 3, fig.width = 7, eval=FALSE}
 #Adaptive
 set.seed(142)
-results_Adaptive<-runSavi(SEVEN_PARTITE_EXAMPLE,7,"Adaptive",c(10000,1000,100,0.8,0),myScoringFunction)
+load("data/EIGHT_PARTITE_EXAMPLE.rda")
+results_Adaptive<-runSavi(EIGHT_PARTITE_EXAMPLE,7,"Adaptive",c(10000,1000,100,0.8,0),myScoringFunction)
 plot(results_Adaptive$scoreArr)
 ```
 
